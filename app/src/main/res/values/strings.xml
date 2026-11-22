@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ScrollLock</string>
+    <string name="accessibility_description">Detects when apps you selected open during an active focus session and displays an interruption screen. It does not read screen content or send activity data.</string>
+</resources>
