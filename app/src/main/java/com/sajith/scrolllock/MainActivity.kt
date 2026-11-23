@@ -419,8 +419,8 @@ class MainActivity : Activity() {
         })
     }
 
-    private fun sectionSubtitle() {
-        content.addView(label("Choose which apps ScrollLock should interrupt.", 12, secondary, false, 1f))
+    private fun sectionSubtitle(value: String = "Choose which apps ScrollLock should interrupt.") {
+        content.addView(label(value, 12, secondary, false, 1f))
     }
 
     private fun metricCard(value: String, caption: String): View {
