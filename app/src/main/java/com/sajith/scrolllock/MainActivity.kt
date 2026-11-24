@@ -67,7 +67,210 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun buildShell() {
+
+    private var onboardingShowing = false
+    private var onboardingStep = 0
+    private var onboardingRoot: LinearLayout? = null
+    private val onboardingBg = Color.rgb(224, 224, 224)
+    private val onboardingInk = Color.rgb(79, 73, 73)
+    private val onboardingMuted = Color.rgb(119, 112, 112)
+    private val onboardingOrange = Color.rgb(249, 76, 17)
+
+    private fun showOnboarding() {
+        onboardingShowing = true
+        window.statusBarColor = onboardingBg
+        window.navigationBarColor = onboardingBg
+        if (Build.VERSION.SDK_INT >= 23) {
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
+        renderOnboarding()
+    }
+
+    private fun renderOnboarding() {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(20), dp(20), dp(20), dp(18))
+            setBackgroundColor(onboardingBg)
+        }
+        val brand = TextView(this).apply {
+            text = "scrolllock"
+            textSize = 29f
+            letterSpacing = 0.03f
+            setTextColor(onboardingInk)
+            typeface = Typeface.create("monospace", Typeface.BOLD)
+            gravity = Gravity.CENTER
+        }
+        root.addView(brand, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(76)
+        ))
+        val hero = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            background = rounded(Color.WHITE, 26)
+        }
+        val heroText = TextView(this).apply {
+            text = when (onboardingStep) {
+                0 -> "01"
+                1 -> "▪   ▪   ▪"
+                2 -> "08"
+                else -> "■"
+            }
+            textSize = if (onboardingStep == 0 || onboardingStep == 2) 76f else 48f
+            setTextColor(if (onboardingStep == 3) onboardingOrange else onboardingInk)
+            typeface = Typeface.create("monospace", Typeface.BOLD)
+            gravity = Gravity.CENTER
+            letterSpacing = if (onboardingStep == 1) 0.12f else 0f
+        }
+        hero.addView(heroText)
+        root.addView(hero, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 0.34f
+        ).apply { topMargin = dp(18) })
+
+        val middle = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+        }
+        val left = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(24), dp(12), 0)
+        }
+        val titles = listOf("ACCESSIBILITY", "BEFORE BOARDING", "THE BLOCK", "ANALOG CONTROLS")
+        val descriptions = listOf(
+            "ScrollLock uses Accessibility to notice when you open an app you chose to pause. It does not read what is on your screen.",
+            "A focus session needs the required system access to work reliably. Review each permission before you begin.",
+            "Choose how long to focus. Your phone, messages, camera and the apps you keep available stay at hand.",
+            "ScrollLock is designed like a small machine: wheels, levers and handles. Pull the lever to move forward."
+        )
+        val footnotes = listOf(
+            "ScrollLock never reads what is on your screen; it only brings you back here.",
+            "Nothing is enabled until you grant the permission in Android settings.",
+            "Calls and essential phone functions remain available.",
+            "The lever is a simple gesture to guide you through setup."
+        )
+        val heading = TextView(this).apply {
+            text = (if (onboardingStep == 0) "🔧  " else if (onboardingStep == 2) "◷  " else "▸  ") + titles[onboardingStep]
+            textSize = 15f
+            letterSpacing = 0.10f
+            setTextColor(onboardingInk)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(dp(10), 0, 0, dp(18))
+        }
+        left.addView(heading)
+        val copy = TextView(this).apply {
+            text = descriptions[onboardingStep]
+            textSize = 17f
+            setTextColor(onboardingMuted)
+            setLineSpacing(dp(5).toFloat(), 1f)
+            background = rounded(Color.rgb(218, 218, 218), 22)
+            setPadding(dp(14), dp(16), dp(14), dp(18))
+        }
+        left.addView(copy, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+        val foot = TextView(this).apply {
+            text = "■  " + footnotes[onboardingStep]
+            textSize = 12f
+            setTextColor(onboardingMuted)
+            setPadding(dp(12), dp(14), dp(8), dp(8))
+        }
+        left.addView(foot)
+        middle.addView(left, LinearLayout.LayoutParams(0, dp(390), 1f))
+
+        val rail = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            background = rounded(Color.rgb(216, 216, 216), 30)
+            setPadding(dp(12), dp(18), dp(12), dp(18))
+            isClickable = true
+        }
+        val handle = TextView(this).apply {
+            text = "☰"
+            textSize = 32f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = rounded(onboardingInk, 12)
+            setOnTouchListener { _, event ->
+                if (event.action == android.view.MotionEvent.ACTION_UP) {
+                    if (onboardingStep == 0) grantAccessibility() else advanceOnboarding()
+                    true
+                } else true
+            }
+        }
+        rail.addView(handle, LinearLayout.LayoutParams(dp(68), dp(68)))
+        val dots = TextView(this).apply {
+            text = "•\n•\n•\n•\n•\n•\n•\n•\n•"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(184, 184, 184))
+        }
+        rail.addView(dots, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+        middle.addView(rail, LinearLayout.LayoutParams(dp(94), dp(390)).apply {
+            topMargin = dp(18)
+        })
+        root.addView(middle, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 0.53f
+        ).apply { topMargin = dp(10) })
+
+        if (onboardingStep == 0) {
+            val grant = TextView(this).apply {
+                text = "Grant"
+                textSize = 16f
+                letterSpacing = 0.08f
+                gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                background = rounded(onboardingInk, 24)
+                setOnClickListener { grantAccessibility() }
+            }
+            root.addView(grant, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(78)
+            ).apply { topMargin = dp(14) })
+        } else {
+            val pull = TextView(this).apply {
+                text = "PULL THE LEVER"
+                textSize = 14f
+                letterSpacing = 0.12f
+                gravity = Gravity.CENTER
+                setTextColor(onboardingMuted)
+                setOnClickListener { advanceOnboarding() }
+            }
+            root.addView(pull, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(74)
+            ))
+        }
+        val footer = TextView(this).apply {
+            text = "Privacy Policy     ·     Terms of Service"
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(onboardingMuted)
+        }
+        root.addView(footer, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(62)
+        ))
+        onboardingRoot = root
+        setContentView(root)
+    }
+
+    private fun grantAccessibility() {
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    private fun advanceOnboarding() {
+        if (onboardingStep < 3) {
+            onboardingStep++
+            renderOnboarding()
+        } else {
+            prefs.edit().putBoolean("onboarding_complete", true).apply()
+            onboardingShowing = false
+            window.statusBarColor = bg
+            window.navigationBarColor = bg
+            if (Build.VERSION.SDK_INT >= 23) window.decorView.systemUiVisibility = 0
+            buildShell()
+            showTab(0)
+        }
+    }
+\n    private fun buildShell() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
