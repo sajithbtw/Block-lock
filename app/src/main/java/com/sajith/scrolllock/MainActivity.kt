@@ -270,7 +270,8 @@ class MainActivity : Activity() {
             showTab(0)
         }
     }
-\n    private fun buildShell() {
+
+    private fun buildShell() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
